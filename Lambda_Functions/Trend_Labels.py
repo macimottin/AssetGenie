@@ -22,10 +22,6 @@ def determine_trend_strength(adx):
     else:
         return 'Extremely Strong Trend'
 
-# Applying the functions to create new columns
-latest_records['trend'] = latest_records.apply(determine_trend, axis=1)
-latest_records['trend_strength'] = latest_records['ADX'].apply(determine_trend_strength)
-
 def lambda_handler(event, context):
     # Specify your S3 bucket and file details
     bucket = 'asset.genie'
@@ -40,3 +36,15 @@ def lambda_handler(event, context):
 
     # Filtering for the latest record for each stock
     latest_records = df.sort_values(by=['symbol', 'date']).groupby('symbol').last().reset_index()
+
+    # Applying the functions to create new columns
+    latest_records['trend'] = latest_records.apply(determine_trend, axis=1)
+    latest_records['trend_strength'] = latest_records['ADX'].apply(determine_trend_strength)
+
+    # Write the updated dataframe to a new CSV in S3
+    wr.s3.to_csv(df, f's3://{bucket}/{output_file_key}', index=False)
+
+    return {
+            'statusCode': 200,
+            'body': f'trend and trend_strengh columns were calculated with latest data of each stock and added to the file {output_file_key}'
+        }

@@ -1,4 +1,4 @@
-import requests
+import requests, time
 import awswrangler as wr
 import pandas as pd
 from datetime import datetime, timedelta

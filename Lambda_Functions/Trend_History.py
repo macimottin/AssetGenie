@@ -34,13 +34,13 @@ def lambda_handler(event, context):
     df2 = wr.s3.read_csv(f's3://{bucket}/{input_file_2}')
   
     # Check for new data and append if necessary
-    updated_trend_hist_df, status_message = check_and_append_data(df1, df2)
+    updated_trend_hist_df = check_and_append_data(df1, df2)
 
     # Write the updated dataframe to a new CSV in S3
     wr.s3.to_csv(updated_trend_hist_df, f's3://{bucket}/{output_file_key}', index=False)
 
     return {
                 'statusCode': 200,
-                'body': f'{status_message}'
+                'body': f'Trend History was updated sucessfully.'
             }
 

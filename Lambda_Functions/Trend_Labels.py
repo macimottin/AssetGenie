@@ -42,7 +42,7 @@ def lambda_handler(event, context):
     latest_records['trend_strength'] = latest_records['ADX'].apply(determine_trend_strength)
 
     # Write the updated dataframe to a new CSV in S3
-    wr.s3.to_csv(df, f's3://{bucket}/{output_file_key}', index=False)
+    wr.s3.to_csv(latest_records, f's3://{bucket}/{output_file_key}', index=False)
 
     return {
             'statusCode': 200,

@@ -1,4 +1,4 @@
-import requests
+import requests, time
 import awswrangler as wr
 import pandas as pd
 from datetime import datetime, timedelta
@@ -44,13 +44,22 @@ def fetch_stock_data(api_key, tickers, start_date, end_date):
             'date_from': start_date,
             'date_to': end_date
         }
-        response = requests.get(base_url, params=params)
-        if response.status_code == 200:
-            data = response.json()
-            stock_data = pd.json_normalize(data, 'data')
-            all_stocks_data = pd.concat([all_stocks_data, stock_data], ignore_index=True)
-        else:
-            print(f"Failed to fetch data for {formatted_ticker}. Status Code: {response.status_code}")
-            print("Response:", response.text)
-
+        
+        retry_count = 0
+        while True:
+            response = requests.get(base_url, params=params)
+            if response.status_code == 200:
+                data = response.json()
+                stock_data = pd.json_normalize(data, 'data')
+                all_stocks_data = pd.concat([all_stocks_data, stock_data], ignore_index=True)
+                break
+            elif response.status_code == 429 and retry_count < 1:
+                print(f"Rate limit exceeded for {formatted_ticker}. Retrying after 100ms.")
+                time.sleep(0.1)
+                retry_count += 1
+            else:
+                print(f"Failed to fetch data for {formatted_ticker}. Status Code: {response.status_code}")
+                print("Response:", response.text)
+                break
+                
     return all_stocks_data

@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 def lambda_handler(event, context):
 
     # Your API key
-    api_key = '088eaf16b9832d99695bda9073fa92e9'
+    api_key = 'your API key'
 
     # Define the file path within AWS S3 for reading
     raw_s3_bucket = 'asset.genie'

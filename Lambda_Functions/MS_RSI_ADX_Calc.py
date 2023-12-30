@@ -15,24 +15,42 @@ def calculate_rsi(data, window=14):
     return rsi
 
 def calculate_adx(data, window=14):
+    # Ensure 'high', 'low', and 'close' are integers
+    data['high'] = data['high'].astype(int)
+    data['low'] = data['low'].astype(int)
+    data['close'] = data['close'].astype(int)
+
     high = data['high']
     low = data['low']
     close = data['close']
 
-    plus_dm = high.diff()
-    minus_dm = low.diff()
-    plus_dm[plus_dm < 0] = 0
-    minus_dm[minus_dm > 0] = 0
+    # Calculate the differences
+    delta_high = high.diff()
+    delta_low = low.diff()
 
-    tr1 = pd.DataFrame(high - low)
-    tr2 = pd.DataFrame(abs(high - close.shift(1)))
-    tr3 = pd.DataFrame(abs(low - close.shift(1)))
-    frames = [tr1, tr2, tr3]
-    tr = pd.concat(frames, axis=1, join='inner').max(axis=1)
+    # Initialize +DM and -DM
+    plus_dm = pd.Series([0] * len(data))
+    minus_dm = pd.Series([0] * len(data))
+
+    # Calculate +DM and -DM
+    for i in range(1, len(data)):
+        if delta_high[i] > 0 and delta_high[i] > delta_low[i]:
+            plus_dm[i] = delta_high[i]
+        if delta_low[i] < 0 and delta_low[i] < delta_high[i]:
+            minus_dm[i] = abs(delta_low[i])
+
+    # Calculate the True Range (TR)
+    tr1 = high - low
+    tr2 = abs(high - close.shift(1))
+    tr3 = abs(low - close.shift(1))
+    tr = pd.DataFrame({'tr1': tr1, 'tr2': tr2, 'tr3': tr3}).max(axis=1)
     atr = tr.rolling(window=window).mean()
 
+    # Calculate +DI and -DI
     plus_di = 100 * (plus_dm.rolling(window=window).mean() / atr)
     minus_di = abs(100 * (minus_dm.rolling(window=window).mean() / atr))
+
+    # Calculate DX and ADX
     dx = (abs(plus_di - minus_di) / abs(plus_di + minus_di)) * 100
     adx = dx.rolling(window=window).mean()
 

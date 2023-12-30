@@ -4,12 +4,15 @@ import datetime
 
 # Defining the function to determine the trend
 def determine_trend(row):
-    if row['plus_dm'] > row['minus_dm']:
-        return 'Uptrend'
-    elif row['minus_dm'] > row['plus_dm']:
-        return 'Downtrend'
-    else:
-        return 'Stable'
+    difference = abs(row['plus_dm'] - row['minus_dm'])
+
+    if difference < 5:
+        return 'Reversing'
+    elif difference >= 5:
+        if row['plus_dm'] > row['minus_dm']:
+            return 'Uptrend'
+        else:
+            return 'Downtrend'
 
 # Defining the function to determine the trend strength
 def determine_trend_strength(adx):

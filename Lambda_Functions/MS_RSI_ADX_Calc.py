@@ -15,6 +15,14 @@ def calculate_rsi(data, window=14):
     return rsi
 
 def calculate_adx(data, window=14):
+    # Copy the data to avoid SettingWithCopyWarning
+    data = data.copy()
+
+    # Ensure 'high', 'low', and 'close' are integers
+    data.loc[:, 'high'] = data['high'].astype(int)
+    data.loc[:, 'low'] = data['low'].astype(int)
+    data.loc[:, 'close'] = data['close'].astype(int)
+
     high = data['high']
     low = data['low']
     close = data['close']
@@ -24,21 +32,22 @@ def calculate_adx(data, window=14):
     delta_low = low.diff()
 
     # Initialize +DM and -DM
-    plus_dm = pd.Series([0] * len(data))
-    minus_dm = pd.Series([0] * len(data))
+    plus_dm = pd.Series([0] * len(data), index=data.index)
+    minus_dm = pd.Series([0] * len(data), index=data.index)
 
-    # Calculate +DM and -DM
-    for i in range(1, len(data)):
-        if delta_high[i] > 0 and delta_high[i] > delta_low[i]:
-            plus_dm[i] = delta_high[i]
-        if delta_low[i] < 0 and delta_low[i] < delta_high[i]:
-            minus_dm[i] = abs(delta_low[i])
+    # Calculate +DM and -DM using iterrows
+    for i, row in data.iterrows():
+        if i > 0:  # Skip the first row
+            if delta_high.loc[i] > 0 and delta_high.loc[i] > delta_low.loc[i]:
+                plus_dm.loc[i] = delta_high.loc[i]
+            if delta_low.loc[i] < 0 and delta_low.loc[i] < delta_high.loc[i]:
+                minus_dm.loc[i] = abs(delta_low.loc[i])
 
     # Calculate the True Range (TR)
     tr1 = high - low
     tr2 = abs(high - close.shift(1))
     tr3 = abs(low - close.shift(1))
-    tr = pd.DataFrame({'tr1': tr1, 'tr2': tr2, 'tr3': tr3}).max(axis=1)
+    tr = pd.DataFrame({'tr1': tr1, 'tr2': tr2, 'tr3': tr3}, index=data.index).max(axis=1)
     atr = tr.rolling(window=window).mean()
 
     # Calculate +DI and -DI

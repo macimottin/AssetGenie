@@ -35,12 +35,13 @@ def calculate_adx(data, window=14):
     plus_dm = pd.Series([0] * len(data), index=data.index)
     minus_dm = pd.Series([0] * len(data), index=data.index)
 
-    # Calculate +DM and -DM
-    for i in data.index[1:]:
-        if delta_high.loc[i] > 0 and delta_high.loc[i] > delta_low.loc[i]:
-            plus_dm.loc[i] = delta_high.loc[i]
-        if delta_low.loc[i] < 0 and delta_low.loc[i] < delta_high.loc[i]:
-            minus_dm.loc[i] = abs(delta_low.loc[i])
+    # Calculate +DM and -DM using iterrows
+    for i, row in data.iterrows():
+        if i > 0:  # Skip the first row
+            if delta_high.loc[i] > 0 and delta_high.loc[i] > delta_low.loc[i]:
+                plus_dm.loc[i] = delta_high.loc[i]
+            if delta_low.loc[i] < 0 and delta_low.loc[i] < delta_high.loc[i]:
+                minus_dm.loc[i] = abs(delta_low.loc[i])
 
     # Calculate the True Range (TR)
     tr1 = high - low

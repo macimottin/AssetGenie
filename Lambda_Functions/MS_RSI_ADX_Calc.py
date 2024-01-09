@@ -14,51 +14,42 @@ def calculate_rsi(data, window=14):
     rsi = 100 - (100 / (1 + rs))
     return rsi
 
+import pandas as pd
+
 def calculate_adx(data, window=14):
-    # Copy the data to avoid SettingWithCopyWarning
-    data = data.copy()
-
-    # Ensure 'high', 'low', and 'close' are integers
-    data.loc[:, 'high'] = data['high'].astype(int)
-    data.loc[:, 'low'] = data['low'].astype(int)
-    data.loc[:, 'close'] = data['close'].astype(int)
-
     high = data['high']
     low = data['low']
     close = data['close']
 
-    # Calculate the differences
     delta_high = high.diff()
     delta_low = low.diff()
 
-    # Initialize +DM and -DM
-    plus_dm = pd.Series([0] * len(data), index=data.index)
-    minus_dm = pd.Series([0] * len(data), index=data.index)
+    plus_dm = pd.Series([0.0] * len(data), index=data.index)
+    minus_dm = pd.Series([0.0] * len(data), index=data.index)
 
-    # Calculate +DM and -DM using iterrows
-    for i, row in data.iterrows():
-        if i > 0:  # Skip the first row
-            if delta_high.loc[i] > 0 and delta_high.loc[i] > delta_low.loc[i]:
-                plus_dm.loc[i] = delta_high.loc[i]
-            if delta_low.loc[i] < 0 and delta_low.loc[i] < delta_high.loc[i]:
-                minus_dm.loc[i] = abs(delta_low.loc[i])
+    for i in range(1, len(data)):
+        if delta_high.iloc[i] > 0 and delta_high.iloc[i] > -delta_low.iloc[i]:
+            plus_dm.iloc[i] = max(delta_high.iloc[i], 0)
+        if delta_low.iloc[i] < 0 and -delta_low.iloc[i] > delta_high.iloc[i]:
+            minus_dm.iloc[i] = max(-delta_low.iloc[i], 0)
 
-    # Calculate the True Range (TR)
     tr1 = high - low
     tr2 = abs(high - close.shift(1))
     tr3 = abs(low - close.shift(1))
     tr = pd.DataFrame({'tr1': tr1, 'tr2': tr2, 'tr3': tr3}, index=data.index).max(axis=1)
     atr = tr.rolling(window=window).mean()
 
-    # Calculate +DI and -DI
-    plus_di = 100 * (plus_dm.rolling(window=window).mean() / atr)
-    minus_di = abs(100 * (minus_dm.rolling(window=window).mean() / atr))
+    # Normalize +DM and -DM to a range of 0 to 100
+    plus_dm_normalized = 100 * (plus_dm.rolling(window=window).mean() / atr)
+    minus_dm_normalized = 100 * (minus_dm.rolling(window=window).mean() / atr)
 
-    # Calculate DX and ADX
-    dx = (abs(plus_di - minus_di) / abs(plus_di + minus_di)) * 100
+    plus_di = 100 * plus_dm_normalized / atr
+    minus_di = 100 * minus_dm_normalized / atr
+
+    dx = (abs(plus_di - minus_di) / (plus_di + minus_di)) * 100
     adx = dx.rolling(window=window).mean()
 
-    return adx, plus_dm, minus_dm
+    return adx, plus_dm_normalized, minus_dm_normalized
 
 def lambda_handler(event, context):
     # Specify your S3 bucket and file details
